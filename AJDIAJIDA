@@ -1293,10 +1293,6 @@ do
                 TextSize = 14,
                 TextTransparency = 0.5,
                 Parent = Holder,
-
-                DPIExclude = {
-                    Size = true,
-                },
             })
 
             local Checkbox = New("Frame", {
@@ -4019,11 +4015,11 @@ function Library:Notify(...)
     return Data
 end
 
-function Library:CreateWatermark(HubName: string)
+function Library:CreateWatermark(HubName: string, IconId: (string | number)?)
     local Background = Library:MakeOutline(ScreenGui, Library.CornerRadius, 5)
-    Background.AnchorPoint = Vector2.new(1, 0)
+    Background.AnchorPoint = Vector2.new(0, 0)
     Background.AutomaticSize = Enum.AutomaticSize.XY
-    Background.Position = UDim2.new(1, -6, 0, 6)
+    Background.Position = UDim2.fromOffset(6, 6)
     Background.Size = UDim2.fromOffset(0, 0)
     Library:UpdateDPI(Background, {
         Position = false,
@@ -4048,11 +4044,26 @@ function Library:CreateWatermark(HubName: string)
         PaddingTop = UDim.new(0, 5),
         Parent = Holder,
     })
+    New("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        Parent = Holder,
+    })
+
+    local IconImage
+    if IconId then
+        IconImage = New("ImageLabel", {
+            Image = tonumber(IconId) and "rbxassetid://" .. tostring(IconId) or tostring(IconId),
+            Size = UDim2.fromOffset(16, 16),
+            Parent = Holder,
+        })
+    end
 
     local Label = New("TextLabel", {
         AutomaticSize = Enum.AutomaticSize.XY,
         BackgroundTransparency = 1,
-        Text = string.format("%s  ❘  0FPS  ❘  0Ping", HubName),
+        Text = string.format("%s ❘ 0FPS ❘ 0Ping", HubName),
         TextSize = 14,
         Parent = Holder,
     })
@@ -4061,6 +4072,7 @@ function Library:CreateWatermark(HubName: string)
         Background = Background,
         Holder = Holder,
         Label = Label,
+        IconImage = IconImage,
         HubName = HubName,
     }
     Library.Watermark = WatermarkTable
@@ -4068,6 +4080,32 @@ function Library:CreateWatermark(HubName: string)
     function WatermarkTable:SetText(NewHubName: string)
         WatermarkTable.HubName = NewHubName
     end
+
+    function WatermarkTable:SetIcon(NewIcon: (string | number)?)
+        if not NewIcon then
+            if IconImage then
+                IconImage:Destroy()
+                IconImage = nil
+                WatermarkTable.IconImage = nil
+            end
+            return
+        end
+
+        if not IconImage then
+            IconImage = New("ImageLabel", {
+                Image = tonumber(NewIcon) and "rbxassetid://" .. tostring(NewIcon) or tostring(NewIcon),
+                LayoutOrder = -1,
+                Size = UDim2.fromOffset(16, 16),
+                Parent = Holder,
+            })
+            WatermarkTable.IconImage = IconImage
+        else
+            IconImage.Image = tonumber(NewIcon) and "rbxassetid://" .. tostring(NewIcon) or tostring(NewIcon)
+        end
+    end
+
+    --// Draggable \\--
+    Library:MakeDraggable(Background, Holder, true)
 
     local Frames = 0
     local LastUpdate = os.clock()
@@ -4086,7 +4124,7 @@ function Library:CreateWatermark(HubName: string)
                 Ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
             end)
 
-            Label.Text = string.format("%s  ❘  %dFPS  ❘  %dPing", WatermarkTable.HubName, FPS, Ping)
+            Label.Text = string.format("%s ❘ %dFPS ❘ %dPing", WatermarkTable.HubName, FPS, Ping)
         end
     end))
 
